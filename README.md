@@ -32,7 +32,9 @@ data.sec.gov, so the fetch happens in actions.
 | `GOOGLE_SHEET_ID` | variable | id from the sheet url |
 | `DATABRICKS_CLIENT_ID` | secret | service principal oauth client id |
 | `DATABRICKS_CLIENT_SECRET` | secret | service principal oauth secret |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | secret | service account key json |
+
+google auth is keyless: the workflow's oidc token is exchanged for short lived credentials on
+the `capex-sheet-writer` service account (workload identity federation), limited to this repo.
 
 ## run locally
 
