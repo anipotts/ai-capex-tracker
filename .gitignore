@@ -3,4 +3,5 @@ CHECKOUT-ROLE.local.md
 __pycache__/
 .venv/
 data/raw/
+data/
 *.local.md
