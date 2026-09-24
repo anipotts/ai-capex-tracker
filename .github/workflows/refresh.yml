@@ -22,7 +22,7 @@ jobs:
       SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DATABRICKS_WAREHOUSE_ID: ${{ vars.DATABRICKS_WAREHOUSE_ID }}
-      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }} # an id, not a credential
       DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
       GOOGLE_SHEET_ID: ${{ vars.GOOGLE_SHEET_ID }}
     steps:
