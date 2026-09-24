@@ -9,7 +9,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # commits the gold snapshot back, which also keeps the schedule from going stale
+  contents: write # pushes the gold snapshot to the data branch
+  id-token: write # lets google trust this workflow's oidc token, so no google key exists anywhere
 
 concurrency: refresh
 
@@ -24,7 +25,6 @@ jobs:
       DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
       DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
       GOOGLE_SHEET_ID: ${{ vars.GOOGLE_SHEET_ID }}
-      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
@@ -35,15 +35,30 @@ jobs:
       - name: build lakehouse on databricks and run checks
         run: uv run run_databricks.py
 
+      # workload identity federation: only workflows in anipotts/ai-capex-tracker can use this
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/779608775039/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: capex-sheet-writer@ai-capex-tracker-ap.iam.gserviceaccount.com
+
       - name: publish gold to google sheet
         run: uv run publish/google_sheet.py
 
-      - name: commit gold snapshot if it changed
+      # main is protected (prs only), so snapshots land on their own `data` branch. a push
+      # there still counts as repo activity, which keeps github from disabling the schedule.
+      - name: commit gold snapshot to the data branch if it changed
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/gold/quarterly_capex.csv
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch --depth 1 origin data:data; then
+            git worktree add "$RUNNER_TEMP/snap" data
+          else
+            git worktree add --orphan -b data "$RUNNER_TEMP/snap"
+          fi
+          cp data/gold/quarterly_capex.csv "$RUNNER_TEMP/snap/"
+          cd "$RUNNER_TEMP/snap"
+          git add quarterly_capex.csv
           if ! git diff --cached --quiet; then
             git commit -m "chore: refresh gold snapshot"
-            git push
+            git push origin data
           fi

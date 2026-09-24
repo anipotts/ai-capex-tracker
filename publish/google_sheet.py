@@ -3,19 +3,22 @@
 tab `quarterly_capex` gets the whole gold table, tab `meta` gets the refresh time and source,
 so the dashboard can show when it last updated.
 
-env: GOOGLE_SERVICE_ACCOUNT_JSON (the key file contents, a github secret) and
-GOOGLE_SHEET_ID (from the sheet url, not secret). the sheet must be shared with the
-service account's email as an editor.
+auth is keyless: in github actions, google-github-actions/auth trades the workflow's oidc
+token for short lived service account credentials (workload identity federation), and
+google.auth.default() picks them up. locally, `gcloud auth application-default login` works.
+the sheet must be shared with the service account's email as an editor.
+
+env: GOOGLE_SHEET_ID (from the sheet url, not secret).
 
 usage: uv run publish/google_sheet.py
 """
 
 import csv
-import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+import google.auth
 import gspread
 
 GOLD = Path(__file__).resolve().parent.parent / "data" / "gold" / "quarterly_capex.csv"
@@ -29,7 +32,8 @@ def tab(sheet: gspread.Spreadsheet, title: str) -> gspread.Worksheet:
 
 
 def main() -> None:
-    client = gspread.service_account_from_dict(json.loads(os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]))
+    creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/spreadsheets"])
+    client = gspread.authorize(creds)
     sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"])
 
     with open(GOLD, newline="") as f:

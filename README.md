@@ -21,7 +21,8 @@ against delta tables in `workspace.ai_capex` (`run_databricks.py`).
 
 `.github/workflows/refresh.yml` runs weekly on github actions: pull sec, upload bronze to a
 databricks volume, rebuild silver and gold, run the checks, publish the sheet, and commit
-`data/gold/quarterly_capex.csv` when it changed. databricks free edition can't reach
+the gold csv to the `data` branch when it changed (`main` only takes pull requests).
+`data/gold/quarterly_capex.csv` on `main` is a seed copy. databricks free edition can't reach
 data.sec.gov, so the fetch happens in actions.
 
 | name | kind | value |
@@ -32,7 +33,9 @@ data.sec.gov, so the fetch happens in actions.
 | `GOOGLE_SHEET_ID` | variable | id from the sheet url |
 | `DATABRICKS_CLIENT_ID` | secret | service principal oauth client id |
 | `DATABRICKS_CLIENT_SECRET` | secret | service principal oauth secret |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | secret | service account key json |
+
+google auth is keyless: the workflow's oidc token is exchanged for short lived credentials on
+the `capex-sheet-writer` service account (workload identity federation), limited to this repo.
 
 ## run locally
 
