@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # commits the gold snapshot back, which also keeps the schedule from going stale
+  contents: write # pushes the gold snapshot to the data branch
   id-token: write # lets google trust this workflow's oidc token, so no google key exists anywhere
 
 concurrency: refresh
@@ -44,12 +44,21 @@ jobs:
       - name: publish gold to google sheet
         run: uv run publish/google_sheet.py
 
-      - name: commit gold snapshot if it changed
+      # main is protected (prs only), so snapshots land on their own `data` branch. a push
+      # there still counts as repo activity, which keeps github from disabling the schedule.
+      - name: commit gold snapshot to the data branch if it changed
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/gold/quarterly_capex.csv
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch --depth 1 origin data:data; then
+            git worktree add "$RUNNER_TEMP/snap" data
+          else
+            git worktree add --orphan -b data "$RUNNER_TEMP/snap"
+          fi
+          cp data/gold/quarterly_capex.csv "$RUNNER_TEMP/snap/"
+          cd "$RUNNER_TEMP/snap"
+          git add quarterly_capex.csv
           if ! git diff --cached --quiet; then
             git commit -m "chore: refresh gold snapshot"
-            git push
+            git push origin data
           fi

@@ -21,7 +21,8 @@ against delta tables in `workspace.ai_capex` (`run_databricks.py`).
 
 `.github/workflows/refresh.yml` runs weekly on github actions: pull sec, upload bronze to a
 databricks volume, rebuild silver and gold, run the checks, publish the sheet, and commit
-`data/gold/quarterly_capex.csv` when it changed. databricks free edition can't reach
+the gold csv to the `data` branch when it changed (`main` only takes pull requests).
+`data/gold/quarterly_capex.csv` on `main` is a seed copy. databricks free edition can't reach
 data.sec.gov, so the fetch happens in actions.
 
 | name | kind | value |
