@@ -1,0 +1,48 @@
+# weekly refresh: sec -> databricks (bronze/silver/gold + checks) -> google sheet -> tableau public.
+# filings land quarterly, so weekly is plenty. a failed check stops the run before publishing.
+name: refresh
+
+on:
+  schedule:
+    - cron: "17 13 * * 1" # mondays 13:17 utc, off the top of the hour when runners are busy
+  workflow_dispatch:
+
+permissions:
+  contents: write # commits the gold snapshot back, which also keeps the schedule from going stale
+
+concurrency: refresh
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_WAREHOUSE_ID: ${{ vars.DATABRICKS_WAREHOUSE_ID }}
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+      GOOGLE_SHEET_ID: ${{ vars.GOOGLE_SHEET_ID }}
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+
+      - name: pull sec filings
+        run: uv run ingest/pull_sec.py
+
+      - name: build lakehouse on databricks and run checks
+        run: uv run run_databricks.py
+
+      - name: publish gold to google sheet
+        run: uv run publish/google_sheet.py
+
+      - name: commit gold snapshot if it changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/gold/quarterly_capex.csv
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: refresh gold snapshot"
+            git push
+          fi

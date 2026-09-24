@@ -12,6 +12,27 @@ microsoft, alphabet, amazon, meta, oracle. built from sec edgar xbrl filings.
 | silver | `sql/01_silver_capex_facts.sql` | fiscal year to date values, tags reconciled, restatements deduped |
 | gold | `sql/02_gold_quarterly_capex.sql` | quarterly capex from ytd deltas, ttm, yoy, calendar alignment |
 | checks | `sql/03_checks.sql` | each query returns bad rows, empty means pass |
+| publish | `publish/google_sheet.py` | gold to a google sheet, which tableau public refreshes daily |
+
+the same sql runs in two places: duckdb locally (`build.py`) and a databricks sql warehouse
+against delta tables in `workspace.ai_capex` (`run_databricks.py`).
+
+## schedule
+
+`.github/workflows/refresh.yml` runs weekly on github actions: pull sec, upload bronze to a
+databricks volume, rebuild silver and gold, run the checks, publish the sheet, and commit
+`data/gold/quarterly_capex.csv` when it changed. databricks free edition can't reach
+data.sec.gov, so the fetch happens in actions.
+
+| name | kind | value |
+|---|---|---|
+| `SEC_USER_AGENT` | variable | `ai-capex-tracker <contact email>` |
+| `DATABRICKS_HOST` | variable | workspace url |
+| `DATABRICKS_WAREHOUSE_ID` | variable | sql warehouse id |
+| `GOOGLE_SHEET_ID` | variable | id from the sheet url |
+| `DATABRICKS_CLIENT_ID` | secret | service principal oauth client id |
+| `DATABRICKS_CLIENT_SECRET` | secret | service principal oauth secret |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | secret | service account key json |
 
 ## run locally
 
@@ -27,6 +48,10 @@ uv run build.py
 ```
 
 writes `data/capex.duckdb` and `data/gold/quarterly_capex.csv`, exits non zero if a check fails.
+
+```bash
+DATABRICKS_CONFIG_PROFILE=capex DATABRICKS_WAREHOUSE_ID=<id> uv run run_databricks.py
+```
 
 ## data notes
 

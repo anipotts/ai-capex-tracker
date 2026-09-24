@@ -3,5 +3,8 @@ CHECKOUT-ROLE.local.md
 __pycache__/
 .venv/
 data/raw/
-data/
+data/*
+!data/gold/
+data/gold/*
+!data/gold/quarterly_capex.csv
 *.local.md
