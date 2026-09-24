@@ -24,6 +24,9 @@ quarterly as (
         -- microsoft fiscal Q1 (jul to sep) lines up with alphabet's Q3 on one axis.
         year(cast(end_date - interval 45 day as date)) as calendar_year,
         quarter(cast(end_date - interval 45 day as date)) as calendar_quarter,
+        -- running quarter number (2026 Q2 -> 8106), so "4 quarters back" is plain arithmetic
+        year(cast(end_date - interval 45 day as date)) * 4
+            + quarter(cast(end_date - interval 45 day as date)) as quarter_index,
         case
             when fiscal_quarter = 1 then ytd_capex_usd
             when prev_fiscal_quarter = fiscal_quarter - 1 then ytd_capex_usd - prev_ytd_capex_usd
@@ -35,11 +38,19 @@ quarterly as (
     from deltas
 )
 
+-- ttm and yoy check the quarter_index of the rows they reach back to, so a quarter missing
+-- from the filings (amazon 2017 Q2) leaves a null instead of comparing the wrong quarters.
 select
     *,
     concat(cast(calendar_year as string), '-Q', cast(calendar_quarter as string)) as calendar_label,
-    case when count(capex_usd) over last4 = 4 then sum(capex_usd) over last4 end as capex_ttm_usd,
-    capex_usd / nullif(lag(capex_usd, 4) over by_company, 0) - 1 as capex_yoy_growth
+    case
+        when count(capex_usd) over last4 = 4 and lag(quarter_index, 3) over by_company = quarter_index - 3
+            then sum(capex_usd) over last4
+    end as capex_ttm_usd,
+    case
+        when lag(quarter_index, 4) over by_company = quarter_index - 4
+            then capex_usd / nullif(lag(capex_usd, 4) over by_company, 0) - 1
+    end as capex_yoy_growth
 from quarterly
 window
     by_company as (partition by ticker order by quarter_end),

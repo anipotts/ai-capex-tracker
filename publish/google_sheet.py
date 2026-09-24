@@ -50,6 +50,10 @@ def main() -> None:
         ["refreshed_at_utc", "source"],
         [datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"), "sec edgar xbrl companyfacts api"],
     ], value_input_option="USER_ENTERED")
+    # a new sheet starts with an empty "Sheet1", drop anything that isn't ours
+    for ws in sheet.worksheets():
+        if ws.title not in ("quarterly_capex", "meta"):
+            sheet.del_worksheet(ws)
     print(f"published {len(rows) - 1} rows to google sheet")
 
 
