@@ -3,8 +3,9 @@
 name: refresh
 
 on:
-  schedule:
-    - cron: "17 13 * * 1" # mondays 13:17 utc, off the top of the hour when runners are busy
+  # schedule stays off until the databricks and google secrets exist, then uncomment:
+  # schedule:
+  #   - cron: "17 13 * * 1" # mondays 13:17 utc, off the top of the hour when runners are busy
   workflow_dispatch:
 
 permissions:
