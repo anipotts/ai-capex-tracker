@@ -31,7 +31,7 @@ data.sec.gov, so the fetch happens in actions.
 | `DATABRICKS_HOST` | variable | workspace url |
 | `DATABRICKS_WAREHOUSE_ID` | variable | sql warehouse id |
 | `GOOGLE_SHEET_ID` | variable | id from the sheet url |
-| `DATABRICKS_CLIENT_ID` | secret | service principal oauth client id |
+| `DATABRICKS_CLIENT_ID` | variable | service principal application id (not a credential) |
 | `DATABRICKS_CLIENT_SECRET` | secret | service principal oauth secret |
 
 google auth is keyless: the workflow's oidc token is exchanged for short lived credentials on
