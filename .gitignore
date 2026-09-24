@@ -1,0 +1,6 @@
+CHECKOUT-ROLE.local.md
+.env*
+__pycache__/
+.venv/
+data/raw/
+*.local.md
