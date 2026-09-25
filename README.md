@@ -3,6 +3,8 @@
 quarterly capital spending (capex) for the hyperscalers building ai infrastructure:
 microsoft, alphabet, amazon, meta, oracle. built from sec edgar xbrl filings.
 
+dashboard: [hyperscaler ai capex on tableau public](https://public.tableau.com/app/profile/ani.potts/viz/hyperscaleraicapex/aicapex)
+
 ## pipeline
 
 | layer | where | what |
